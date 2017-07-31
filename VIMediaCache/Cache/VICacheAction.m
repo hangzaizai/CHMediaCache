@@ -24,7 +24,7 @@
     if (!NSEqualRanges(object.range, self.range)) {
         return NO;
     }
-    
+    //测试git,sdjfkdsfsfsdfdsff
     if (object.actionType != self.actionType) {
         return NO;
     }
