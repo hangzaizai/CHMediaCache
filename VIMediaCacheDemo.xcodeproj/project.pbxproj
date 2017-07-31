@@ -27,6 +27,7 @@
 		5FDCF2B21CEBF26800188E0C /* VIResourceLoadingRequestWorker.m in Sources */ = {isa = PBXBuildFile; fileRef = 5FDCF29F1CEBF26800188E0C /* VIResourceLoadingRequestWorker.m */; };
 		5FDCF2BA1CEBF74600188E0C /* MobileCoreServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FDCF2B91CEBF74600188E0C /* MobileCoreServices.framework */; };
 		5FDCF2BC1CEBF76200188E0C /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5FDCF2BB1CEBF76200188E0C /* AVFoundation.framework */; };
+		774A25E41F2F3E9200AE11D7 /* CHTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 774A25E31F2F3E9200AE11D7 /* CHTest.m */; };
 		7759AA991F2989E900D55CC6 /* CHMediaCacheWorker.m in Sources */ = {isa = PBXBuildFile; fileRef = 7759AA981F2989E900D55CC6 /* CHMediaCacheWorker.m */; };
 		7759AA9C1F298A8A00D55CC6 /* CHCacheConfiguration.m in Sources */ = {isa = PBXBuildFile; fileRef = 7759AA9B1F298A8A00D55CC6 /* CHCacheConfiguration.m */; };
 		77719DC31F288303004CE180 /* CHResourceLoaderManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 77719DC21F288303004CE180 /* CHResourceLoaderManager.m */; };
@@ -85,6 +86,8 @@
 		5FDCF2AD1CEBF26800188E0C /* VIMediaCache.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VIMediaCache.h; sourceTree = "<group>"; };
 		5FDCF2B91CEBF74600188E0C /* MobileCoreServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MobileCoreServices.framework; path = System/Library/Frameworks/MobileCoreServices.framework; sourceTree = SDKROOT; };
 		5FDCF2BB1CEBF76200188E0C /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
+		774A25E21F2F3E9200AE11D7 /* CHTest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CHTest.h; sourceTree = "<group>"; };
+		774A25E31F2F3E9200AE11D7 /* CHTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CHTest.m; sourceTree = "<group>"; };
 		7759AA971F2989E900D55CC6 /* CHMediaCacheWorker.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CHMediaCacheWorker.h; sourceTree = "<group>"; };
 		7759AA981F2989E900D55CC6 /* CHMediaCacheWorker.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CHMediaCacheWorker.m; sourceTree = "<group>"; };
 		7759AA9A1F298A8A00D55CC6 /* CHCacheConfiguration.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CHCacheConfiguration.h; sourceTree = "<group>"; };
@@ -134,6 +137,8 @@
 				5F2836BA1D96548E000910CA /* VICacheSessionManager.m */,
 				5F2836BB1D96548E000910CA /* VIMediaCacheWorker.h */,
 				5F2836BC1D96548E000910CA /* VIMediaCacheWorker.m */,
+				774A25E21F2F3E9200AE11D7 /* CHTest.h */,
+				774A25E31F2F3E9200AE11D7 /* CHTest.m */,
 			);
 			path = Cache;
 			sourceTree = "<group>";
@@ -354,6 +359,7 @@
 			files = (
 				77719DCE1F288ECE004CE180 /* CHContentInfo.m in Sources */,
 				5FDCF2AF1CEBF26800188E0C /* VIMediaDownloader.m in Sources */,
+				774A25E41F2F3E9200AE11D7 /* CHTest.m in Sources */,
 				5FDCF2B21CEBF26800188E0C /* VIResourceLoadingRequestWorker.m in Sources */,
 				7759AA9C1F298A8A00D55CC6 /* CHCacheConfiguration.m in Sources */,
 				5F2836BE1D96548E000910CA /* VICacheConfiguration.m in Sources */,
