@@ -13,6 +13,7 @@
 - (instancetype)initWithActionType:(VICacheAtionType)actionType range:(NSRange)range {
     self = [super init];
     if (self) {
+        //添加注释测试
         _actionType = actionType;
         _range = range;
     }
