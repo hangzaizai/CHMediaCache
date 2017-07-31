@@ -151,8 +151,6 @@ static NSString *kURLKey = @"kURLKey";
         return;
     }
     
-    UISlider
-    
     @synchronized (self.internalCacheFragments) {
         NSMutableArray *internalCacheFragments = [self.internalCacheFragments mutableCopy];
         
