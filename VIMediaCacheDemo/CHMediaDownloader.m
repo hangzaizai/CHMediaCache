@@ -9,6 +9,7 @@
 #import "CHMediaDownloader.h"
 #import "CHCacheAction.h"
 #import "CHMediaCacheWorker.h"
+#import "CHCacheSessionManager.h"
 
 @protocol CHURLSessionDelegateObjectDelegate <NSObject>
 
@@ -155,15 +156,34 @@ static NSInteger kBufferSize = 10 * 1024;
 
 - (void)start
 {
+    [self processActions];
+}
 
+-(void)cancel
+{
+    if ( _session ) {
+        [self.session invalidateAndCancel];
+    }
+    self.cancelled = YES;
+}
+
+- (CHURLSessionDelegateObject *)sessionDelegateObject
+{
+    if ( !_sessionDelegateObject ) {
+        _sessionDelegateObject = [[CHURLSessionDelegateObject alloc] initWithDelegate:self];
+    }
+    return _sessionDelegateObject;
 }
 
 - (NSURLSession *)session
 {
     if ( !_session ) {
         NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
-        NSURLSession *session = [NSURLSession sessionWithConfiguration:configuration delegate:self.sessionDelegateObject delegateQueue:<#(nullable NSOperationQueue *)#>];
+        NSURLSession *session = [NSURLSession sessionWithConfiguration:configuration delegate:self.sessionDelegateObject delegateQueue:[CHCacheSessionManager shared].downloadQueue];
+        _session = session;
     }
+    
+    return _session;
 }
 
 #pragma mark -private
@@ -201,7 +221,23 @@ static NSInteger kBufferSize = 10 * 1024;
         NSString *range = [NSString stringWithFormat:@"bytes=%lld-%lld",fromOffset,endOffset];
         [request setValue:range forHTTPHeaderField:@"range"];
         self.startOffset = action.range.location;
-        self.task = [self.session dataTaskWithUR]
+        self.task = [self.session dataTaskWithRequest:request];
+        [self.task resume];
+    }
+}
+
+#pragma mark -CHURLSessionDelegateObjectDelegate
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler
+{
+    NSString *mimeType = response.MIMEType;
+    if ( [mimeType rangeOfString:@"video/"].location == NSNotFound && [mimeType rangeOfString:@"audio/"].location == NSNotFound ) {
+        completionHandler(NSURLSessionResponseCancel);
+    }else{
+        if ( [self.delegate respondsToSelector:@selector(actionWorker:didReceiveResponse:)]) {
+            [self.delegate actionWorker:self didReceiveResponse:response];
+        }
+        [self.cacheWorker startWriting];
+        completionHandler(NSURLSessionResponseAllow);
     }
 }
 
