@@ -16,6 +16,7 @@
     if ( self ) {
         _actionType = actionType;
         _range = range;
+        //测试git
     }
     
     return self;
