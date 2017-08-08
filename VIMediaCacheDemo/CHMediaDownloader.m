@@ -100,6 +100,9 @@ static NSInteger kBufferSize = 10 * 1024;
 @end
 
 @interface CHActionWorker : NSObject<CHURLSessionDelegateObjectDelegate>
+
+@property(nonatomic,strong)
+
 @end
 @implementation CHActionWorker
 @end
