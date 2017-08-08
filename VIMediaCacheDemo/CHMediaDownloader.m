@@ -241,10 +241,125 @@ static NSInteger kBufferSize = 10 * 1024;
     }
 }
 
+
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
+{
+    if ( self.isCancelled ) {
+        return;
+    }
+    NSRange range = NSMakeRange(self.startOffset, data.length);
+    NSError *error;
+    [self.cacheWorker cacheData:data forRange:range error:&error];
+    if ( error ) {
+        if ( [self.delegate respondsToSelector:@selector(actionworker:didFinishWithError:)]) {
+            [self.delegate actionworker:self didFinishWithError:error];
+        }
+        return;
+    }
+    [self.cacheWorker save];
+    self.startOffset += data.length;
+    if ( [self.delegate respondsToSelector:@selector(actionWorker:didReceiveData:isLocal:)]) {
+        [self.delegate actionWorker:self didReceiveData:data isLocal:NO];
+    }
+}
+
+- (void)notifyDownloadProgressWithFlush:(BOOL)flush finished:(BOOL)finished{
+}
+
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
+{
+    [self.cacheWorker finishWriting];
+    [self.cacheWorker save];
+    if ( error ) {
+        if ( [self.delegate respondsToSelector:@selector(actionworker:didFinishWithError:)]) {
+            [self.delegate actionworker:self didFinishWithError:error];
+        }
+    }else{
+        [self processActions];
+    }
+}
+
 @end
 
+@interface CHMediaDownloaderStatus()
+
+@property(nonatomic,strong)NSMutableSet *downloadingURLS;
+
+@end
+
+@implementation CHMediaDownloaderStatus
+
++ (instancetype)shared
+{
+    static CHMediaDownloaderStatus *instance = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        instance = [[self alloc] init];
+        instance.downloadingURLS = [NSMutableSet set];
+    });
+    return instance;
+}
+
+- (void)addURL:(NSURL *)url
+{
+    @synchronized (self.downloadingURLS) {
+        [self.downloadingURLS addObject:url];
+    }
+}
+
+- (void)removeURL:(NSURL *)url
+{
+    @synchronized (self.downloadingURLS) {
+        [self.downloadingURLS removeObject:url];
+    }
+}
+
+- (BOOL)containsURL:(NSURL *)url
+{
+    return [self.downloadingURLS containsObject:url];
+}
+
+- (NSSet *)urls
+{
+    return [self.downloadingURLS copy];
+}
+
+
+@end
+
+@interface  CHMediaDownloader()<CHACtionWorkerDelegate>
+
+@property(nonatomic,strong)NSURL *url;
+@property(nonatomic,strong)CHMediaCacheWorker *cacheWorker;
+@property(nonatomic,strong)CHActionWorker *actionWorker;
+@property(nonatomic,assign)BOOL downloadToEnd;
+
+@end
 
 #pragma mark -Class CHMediaDownloader
 @implementation CHMediaDownloader
+
+- (void)dealloc
+{
+    [[CHMediaDownloaderStatus shared] removeURL:self.url];
+}
+
+- (instancetype)initWithURL:(NSURL *)url
+{
+    self = [super init];
+    if ( self ) {
+        _url = url;
+        _cacheWorker = [[CHMediaCacheWorker alloc] initWithURL:url];
+        _info = _cacheWorker.cacheConfiguration.contentInfo;
+    }
+    
+    return self;
+}
+
+- (void)downloadTaskFromOffset:(unsigned long long)fromOffset length:(NSUInteger)length toEnd:(BOOL)toEnd
+{
+    
+}
+
 
 @end
