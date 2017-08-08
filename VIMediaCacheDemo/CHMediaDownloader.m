@@ -7,6 +7,8 @@
 //
 
 #import "CHMediaDownloader.h"
+#import "CHCacheAction.h"
+#import "CHMediaCacheWorker.h"
 
 @protocol CHURLSessionDelegateObjectDelegate <NSObject>
 
@@ -101,10 +103,108 @@ static NSInteger kBufferSize = 10 * 1024;
 
 @interface CHActionWorker : NSObject<CHURLSessionDelegateObjectDelegate>
 
-@property(nonatomic,strong)
+@property(nonatomic,strong)NSMutableArray <CHCacheAction *> *actions;
+
+- (instancetype)initWithActions:(NSArray<CHCacheAction *> *)actions url:(NSURL *)url cacheWorker:(CHMediaCacheWorker *)cacheWorker;
+
+@property(nonatomic,weak) id<CHACtionWorkerDelegate> delegate;
+
+- (void)start;
+- (void)cancel;
+
+@property(nonatomic,getter=isCancelled)BOOL cancelled;
+
+@property(nonatomic,strong)CHMediaCacheWorker *cacheWorker;
+
+@property(nonatomic,strong)NSURL *url;
+
+@property(nonatomic,strong)NSURLSession *session;
+
+@property(nonatomic,strong)CHURLSessionDelegateObject *sessionDelegateObject;
+@property(nonatomic,strong)NSURLSessionDataTask *task;
+
+@property(nonatomic,assign)NSInteger startOffset;
+
 
 @end
+
+@interface CHActionWorker ()
+
+@property(nonatomic,assign)NSTimeInterval notifyTime;
+
+@end
+
 @implementation CHActionWorker
+
+- (void)dealloc
+{
+    [self cancel];
+}
+
+- (instancetype)initWithActions:(NSArray<CHCacheAction *> *)actions url:(NSURL *)url cacheWorker:(CHMediaCacheWorker *)cacheWorker
+{
+    self = [super init];
+    if ( self ) {
+        _actions = [actions mutableCopy];
+        _cacheWorker = cacheWorker;
+        _url = url;
+    }
+    
+    return self;
+}
+
+- (void)start
+{
+
+}
+
+- (NSURLSession *)session
+{
+    if ( !_session ) {
+        NSURLSessionConfiguration *configuration = [NSURLSessionConfiguration defaultSessionConfiguration];
+        NSURLSession *session = [NSURLSession sessionWithConfiguration:configuration delegate:self.sessionDelegateObject delegateQueue:<#(nullable NSOperationQueue *)#>];
+    }
+}
+
+#pragma mark -private
+- (void)processActions
+{
+    if ( self.isCancelled ) {
+        return;
+    }
+    CHCacheAction *action = [self.actions firstObject];
+    if ( !action ) {
+        if ( [self.delegate respondsToSelector:@selector(actionworker:didFinishWithError:)]) {
+            [self.delegate actionworker:self didFinishWithError:nil];
+        }
+        return;
+    }
+    [self.actions removeObjectAtIndex:0];
+    if ( action.actionType == CHCacheActionTypeLocal ) {
+        NSError *error;
+        NSData *data = [self.cacheWorker cachedDataForRange:action.range error:&error];
+        if ( error ) {
+            if ( [self.delegate respondsToSelector:@selector(actionworker:didFinishWithError:)]) {
+                [self.delegate actionworker:self didFinishWithError:error];
+            }
+        }else{
+            if ( [self.delegate respondsToSelector:@selector(actionWorker:didReceiveData:isLocal:)] ) {
+                [self.delegate actionWorker:self didReceiveData:data isLocal:YES];
+            }
+            [self processActions];
+        }
+    }else{
+        long long fromOffset = action.range.location;
+        long long endOffset = action.range.location + action.range.length - 1;
+        NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:self.url];
+        request.cachePolicy = NSURLRequestReloadIgnoringLocalAndRemoteCacheData;
+        NSString *range = [NSString stringWithFormat:@"bytes=%lld-%lld",fromOffset,endOffset];
+        [request setValue:range forHTTPHeaderField:@"range"];
+        self.startOffset = action.range.location;
+        self.task = [self.session dataTaskWithUR]
+    }
+}
+
 @end
 
 
