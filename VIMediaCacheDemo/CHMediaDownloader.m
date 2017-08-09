@@ -10,6 +10,7 @@
 #import "CHCacheAction.h"
 #import "CHMediaCacheWorker.h"
 #import "CHCacheSessionManager.h"
+#import <MobileCoreServices/MobileCoreServices.h>
 
 @protocol CHURLSessionDelegateObjectDelegate <NSObject>
 
@@ -358,7 +359,111 @@ static NSInteger kBufferSize = 10 * 1024;
 
 - (void)downloadTaskFromOffset:(unsigned long long)fromOffset length:(NSUInteger)length toEnd:(BOOL)toEnd
 {
+    if ( [self isCurrentURLDownloading] ) {
+        [self handleCurrentURLDownloadingError];
+        return;
+    }
+    [[CHMediaDownloaderStatus shared] addURL:self.url];
     
+    NSRange range = NSMakeRange(fromOffset,length);
+    if ( toEnd ) {
+        range.length = self.cacheWorker.cacheConfiguration.contentInfo.contentLength-range.location;
+    }
+    NSArray *actions = [self.cacheWorker cachedDataActionsForRange:range];
+    
+    self.actionWorker = [[CHActionWorker alloc] initWithActions:actions url:self.url cacheWorker:self.cacheWorker];
+    self.actionWorker.delegate = self;
+    [self.actionWorker start];
+    
+}
+
+- (void)downloadFromStartToEnd
+{
+    if ( [self isCurrentURLDownloading] ) {
+        [self handleCurrentURLDownloadingError];
+        return;
+    }
+    [[CHMediaDownloaderStatus shared] addURL:self.url];
+    self.downloadToEnd = YES;
+    NSRange range = NSMakeRange(0, 2);
+    NSArray *actions = [self.cacheWorker cachedDataActionsForRange:range];
+    self.actionWorker = [[CHActionWorker alloc] initWithActions:actions url:self.url cacheWorker:self.cacheWorker];
+    self.actionWorker.delegate = self;
+    [self.actionWorker start];
+}
+
+- (void)cancel
+{
+    [[CHMediaDownloaderStatus shared] removeURL:self.url];
+    [self.actionWorker cancel];
+    self.actionWorker.delegate = nil;
+    self.actionWorker = nil;
+}
+
+
+- (void)invalidateAndCancel
+{
+    [[CHMediaDownloaderStatus shared] removeURL:self.url];
+    [self.actionWorker cancel];
+    self.actionWorker.delegate = nil;
+    self.actionWorker = nil;
+
+}
+
+- (BOOL)isCurrentURLDownloading
+{
+    return [[CHMediaDownloaderStatus shared] containsURL:self.url];
+}
+
+- (void)handleCurrentURLDownloadingError
+{
+    if ( self.delegate ) {
+        NSString *description = [NSString stringWithFormat:@"URL:'%@' already in downloading queue.",self.url];
+        NSError *error = [NSError errorWithDomain:@"com.media.download" code:1 userInfo:@{NSLocalizedDescriptionKey:description}];
+        [self.delegate mediaDownloader:self didFinishedWithError:error];
+    }
+}
+
+#pragma mark -CHActionWorkerDelegate
+- (void)actionWorker:(CHActionWorker *)actionWorker didReceiveResponse:(NSURLResponse *)response
+{
+    if ( !self.info ) {
+        CHContentInfo *info = [CHContentInfo new];
+        if ( [response isKindOfClass:[NSHTTPURLResponse class]]) {
+            NSHTTPURLResponse *HTTPURLResponse = (NSHTTPURLResponse *)response;
+            NSString *acceptRange = HTTPURLResponse.allHeaderFields[@"Accept-Ranges"];
+            info.byteRangeAccessSupported = [acceptRange isEqualToString:@"bytes"];
+            info.contentLength = [[[HTTPURLResponse.allHeaderFields[@"Content-Range"] componentsSeparatedByString:@"/"] lastObject] longLongValue];
+        }
+        
+        NSString *mimeType = response.MIMEType;
+        CFStringRef contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef)(mimeType), NULL);
+        info.contentType = CFBridgingRelease(contentType);
+        self.info = info;
+        
+        NSError *error;
+        [self.cacheWorker setContentInfo:info error:&error];
+        if ( error ) {
+            if ( [self.delegate respondsToSelector:@selector(mediaDownloader:didFinishedWithError:)] ) {
+                [self.delegate mediaDownloader:self didFinishedWithError:error];
+            }
+            
+            return;
+        }
+        
+    }
+    
+    if ([self.delegate respondsToSelector:@selector(mediaDownloader:didReceiveResponse:)]) {
+        [self.delegate mediaDownloader:self didReceiveResponse:response];
+    }
+
+    
+}
+
+- (void)actionWorker:(CHActionWorker *)actionWorker didReceiveData:(NSData *)data isLocal:(BOOL)isLocal {
+    if ([self.delegate respondsToSelector:@selector(mediaDownloader:didReceiveData:)]) {
+        [self.delegate mediaDownloader:self didReceiveData:data];
+    }
 }
 
 
